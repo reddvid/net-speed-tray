@@ -169,25 +169,22 @@ namespace NetSpeedTray
                     Font fontToUse = new Font("Trebuchet MS", 12, FontStyle.Regular, GraphicsUnit.Pixel);
                     Brush brushToUse = new SolidBrush(GetAccentColor());
                     Bitmap bitmapText = new Bitmap(16, 16);
-                    Graphics g = System.Drawing.Graphics.FromImage(bitmapText);
+                    Graphics g = Graphics.FromImage(bitmapText);
 
                     IntPtr hIcon;
 
                     g.Clear(Color.Transparent);
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
                     g.DrawString(speed, fontToUse, brushToUse, GetPadding(speed), 0);
-                    hIcon = (bitmapText.GetHicon());
-                    trayIcon.Icon = System.Drawing.Icon.FromHandle(hIcon);
+                    hIcon = bitmapText.GetHicon();
+                    trayIcon.Icon = Icon.FromHandle(hIcon);
                     trayIcon.Text = "Up: " + upSpeed + " Mbps \n" + "Down: " + speed + " Mbps";
                 }
             }
 
             private float GetPadding(string speed)
             {
-                if (Convert.ToInt32(speed) <= 9)
-                    return 4;
-                else
-                    return 0;
+                return Convert.ToInt32(speed) <= 9 ? 4 : 0;
             }
 
             private Color GetAccentColor()
@@ -197,16 +194,15 @@ namespace NetSpeedTray
                 {
                     if (key != null)
                     {
-                        var k = key.GetValue("AccentColorMenu");
-                        if (k != null)
+                        var keyValue = key.GetValue("AccentColorMenu");
+                        if (keyValue == null)
                         {
-                            Debug.WriteLine(Convert.ToInt32(k).ToString("X8"));
-                            // Convert Hex to Color
-                            accent = HexToColor(Convert.ToInt32(k).ToString("X8"));
+                            accent = Color.Lime;
                         }
                         else
                         {
-                            accent = Color.Lime;
+                            // Convert Hex to Color
+                            accent = HexToColor(Convert.ToInt32(keyValue).ToString("X8"));
                         }
                     }
                     else
@@ -220,17 +216,22 @@ namespace NetSpeedTray
 
             public static Color HexToColor(string hexString)
             {
-                //replace # occurences
+                // Remove #
                 if (hexString.IndexOf('#') != -1)
+                {
                     hexString = hexString.Replace("#", "");
+                }
 
                 int a, r, g, b = 0;
-                // FFB16300
-                // Actual: 0063B1
+                // Key value format: AABBGGRR
+                // Use return as is
+                // TODO: Calculate for contrast
+
                 a = int.Parse(hexString.Substring(0, 2), NumberStyles.AllowHexSpecifier);
                 r = int.Parse(hexString.Substring(2, 2), NumberStyles.AllowHexSpecifier);
                 g = int.Parse(hexString.Substring(4, 2), NumberStyles.AllowHexSpecifier);
                 b = int.Parse(hexString.Substring(6, 2), NumberStyles.AllowHexSpecifier);
+
                 Debug.WriteLine($"{a} {r} {g} {b}");
                 return Color.FromArgb(a, r, g, b);
             }
@@ -262,27 +263,16 @@ namespace NetSpeedTray
             private bool ReadRegistry()
             {
                 bool isUsingLightTheme;
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"))
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
                 {
-                    if (key != null)
-                    {
-                        var k = key.GetValue("AppsUseLightTheme");
-                        if (k != null)
-                        {
-                            if (k.ToString() == "1")
-                                isUsingLightTheme = true;
-                            else
-                                isUsingLightTheme = false;
-                        }
-                        else
-                        {
-                            isUsingLightTheme = true;
-                        }
-                    }
-                    else
+                    if (key == null)
                         isUsingLightTheme = true;
+                    else
+                    {
+                        var keyValue = key.GetValue("AppsUseLightTheme");
+                        isUsingLightTheme = keyValue != null ? keyValue.ToString() == "1" : true;
+                    }
                 }
-
                 return isUsingLightTheme;
             }
 
